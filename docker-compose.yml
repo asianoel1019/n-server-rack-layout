@@ -1,0 +1,23 @@
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "3080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    ports:
+      - "3081:3081"
+    volumes:
+      - rack-data:/app/src/data
+    environment:
+      - JWT_SECRET=change-me-in-production
+      - PORT=3081
+      - DATA_DIR=/app/src/data
+    restart: unless-stopped
+
+volumes:
+  rack-data:
