@@ -147,6 +147,14 @@ async function saveContracts(contracts) {
   return writeJSON('contracts.json', contracts);
 }
 
+async function getCertificates() {
+  return (await readJSON('certificates.json')) || [];
+}
+
+async function saveCertificates(certificates) {
+  return writeJSON('certificates.json', certificates);
+}
+
 module.exports = {
   readJSON,
   writeJSON,
@@ -176,4 +184,6 @@ module.exports = {
   saveConnections,
   getContracts,
   saveContracts,
+  getCertificates,
+  saveCertificates,
 };

@@ -10,7 +10,7 @@ src/data/*
 node_modules/*
 node_modules/
 backend/node_modules/
-
+.dockerignore
 *.local
 
 # Editor directories and files

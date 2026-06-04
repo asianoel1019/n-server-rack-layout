@@ -1,4 +1,4 @@
-import { LayoutDashboard, Server, Building2, Settings, LogOut, Network, Globe, Package, AlertTriangle, Workflow, FileSignature } from 'lucide-react';
+import { LayoutDashboard, Server, Building2, Settings, LogOut, Network, Globe, Package, AlertTriangle, Workflow, FileSignature, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 const navItems = [
@@ -11,6 +11,7 @@ const navItems = [
   { id: 'contracts', label: 'Contracts & Warranties', icon: FileSignature },
   { id: 'ipam', label: 'IP Management', icon: Network },
   { id: 'dns', label: 'DNS Manager', icon: Globe },
+  { id: 'ssl-certs', label: 'SSL Certificates', icon: ShieldCheck },
 ];
 
 export default function Sidebar({ currentPage, onNavigate, onOpenSettings }) {

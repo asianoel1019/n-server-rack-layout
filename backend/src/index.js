@@ -18,6 +18,7 @@ const connectionRoutes = require('./routes/connections');
 const discoveryRoutes = require('./routes/discovery');
 const topologyRoutes = require('./routes/topology');
 const contractRoutes = require('./routes/contracts');
+const certificateRoutes = require('./routes/certificates');
 const deviceMonitor = require('./services/deviceMonitor');
 
 const app = express();
@@ -43,6 +44,7 @@ app.use('/api/connections', connectionRoutes);
 app.use('/api/discovery', discoveryRoutes);
 app.use('/api/topology', topologyRoutes);
 app.use('/api/contracts', contractRoutes);
+app.use('/api/certificates', certificateRoutes);
 
 // System info
 app.get('/api/system/info', (req, res) => {

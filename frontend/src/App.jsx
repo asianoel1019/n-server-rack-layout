@@ -16,6 +16,7 @@ import SparePartsPage from './components/SpareParts/SparePartsPage';
 import HardwareIssuesPage from './components/HardwareIssues/HardwareIssuesPage';
 import TopologyPage from './components/Topology/TopologyPage';
 import ContractPage from './components/Contract/ContractPage';
+import SSLCertificatePage from './components/SSL/SSLCertificatePage';
 import ErrorBoundary from './components/ErrorBoundary';
 import { useWebSocket } from './hooks/useWebSocket';
 
@@ -40,6 +41,7 @@ function AppContent() {
     dns: 'DNS Manager',
     spareparts: 'Spare Parts Inventory',
     contracts: 'Contracts & Warranties',
+    'ssl-certs': 'SSL Certificate Management',
   };
 
   if (loading) {
@@ -110,6 +112,7 @@ function AppContent() {
           {page === 'spareparts' && <SparePartsPage initialDcId={selectedDcId} />}
           {page === 'hardware-issues' && <HardwareIssuesPage />}
           {page === 'contracts' && <ContractPage />}
+          {page === 'ssl-certs' && <SSLCertificatePage />}
         </main>
       </div>
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}

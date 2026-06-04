@@ -11,6 +11,7 @@ export default function DNSManagementPage() {
   const { apiFetch } = useAuth();
   const { showAlert, showConfirm } = useModal();
   const [records, setRecords] = useState([]);
+  const [certs, setCerts] = useState([]);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -36,12 +37,47 @@ export default function DNSManagementPage() {
 
   const fetchRecords = async () => {
     try {
-      const res = await apiFetch('/dns');
-      const data = await res.json();
-      setRecords(data);
-      if (data.length > 0 && !selectedRecord) setSelectedRecord(data[0]);
+      const [dnsRes, certsRes] = await Promise.all([
+        apiFetch('/dns'),
+        apiFetch('/certificates')
+      ]);
+      const dnsData = await dnsRes.json();
+      const certsData = await certsRes.json();
+      setRecords(dnsData);
+      setCerts(certsData);
+      if (dnsData.length > 0 && !selectedRecord) setSelectedRecord(dnsData[0]);
     } catch (e) {}
     setLoading(false);
+  };
+
+  const matchesDomain = (pattern, fqdn) => {
+    if (!pattern || !fqdn) return false;
+    const cleanPattern = pattern.trim().toLowerCase();
+    const cleanFqdn = fqdn.trim().toLowerCase();
+    if (cleanPattern === cleanFqdn) return true;
+    if (cleanPattern.startsWith('*.')) {
+      const suffix = cleanPattern.slice(1);
+      return cleanFqdn.endsWith(suffix) && cleanFqdn.split('.').length === cleanPattern.split('.').length;
+    }
+    return false;
+  };
+
+  const getCertStatus = (cert) => {
+    const today = new Date();
+    const end = new Date(cert.validTo);
+    if (today > end) return 'Expired';
+    const diffTime = end - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    if (diffDays <= (cert.expiryDaysWarning || 30)) return 'Expiring Soon';
+    return 'Active';
+  };
+
+  const getSslCertificate = (fqdn) => {
+    return certs.find(c => {
+      const isCnMatch = matchesDomain(c.commonName, fqdn);
+      const isSanMatch = (c.sans || []).some(san => matchesDomain(san, fqdn));
+      return isCnMatch || isSanMatch;
+    });
   };
 
   const handleValidateAll = async () => {
@@ -150,6 +186,10 @@ export default function DNSManagementPage() {
   }, {});
 
   if (loading) return <div className="p-8">Loading DNS Records...</div>;
+
+  const matchedCert = selectedRecord ? getSslCertificate(selectedRecord.fqdn) : null;
+  const certStatus = matchedCert ? getCertStatus(matchedCert) : null;
+  const certStatusColor = certStatus === 'Active' ? '#22c55e' : certStatus === 'Expiring Soon' ? '#f59e0b' : '#ef4444';
 
   return (
     <div style={{ padding: '24px 32px', height: '100%', display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -263,6 +303,11 @@ export default function DNSManagementPage() {
                         <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#22c55e' }}>
                           <CheckCircle2 size={14} /> Active
                         </span>
+                        {matchedCert && (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: certStatusColor }}>
+                            <ShieldCheck size={14} /> SSL Secured
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -292,6 +337,53 @@ export default function DNSManagementPage() {
                     <p style={{ fontSize: 11, color: 'var(--c-text-sec)', textTransform: 'uppercase', marginBottom: 6 }}>Description</p>
                     <p style={{ fontSize: 14 }}>{selectedRecord.description || 'No description'}</p>
                   </div>
+                </div>
+
+                {/* SSL Coverage panel */}
+                <div style={{ 
+                  marginTop: 24, 
+                  padding: 16, 
+                  background: 'var(--c-surface2)', 
+                  borderRadius: 12,
+                  border: `1px solid ${matchedCert ? (certStatus === 'Expired' ? '#ef4444' : certStatus === 'Expiring Soon' ? '#f59e0b' : 'rgba(255,255,255,0.05)') : 'rgba(255,255,255,0.05)'}`
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <ShieldCheck size={18} style={{ color: matchedCert ? certStatusColor : 'var(--c-text-sec)' }} />
+                      <span style={{ fontSize: 13, fontWeight: 700 }}>SSL Security Coverage</span>
+                    </div>
+                    {matchedCert && (
+                      <span style={{ 
+                        fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4,
+                        background: `${certStatusColor}18`,
+                        color: certStatusColor,
+                        border: `1px solid ${certStatusColor}33`
+                      }}>
+                        {certStatus}
+                      </span>
+                    )}
+                  </div>
+                  
+                  {matchedCert ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr', gap: 16, marginTop: 12, fontSize: 12 }}>
+                      <div>
+                        <span style={{ color: 'var(--c-text-sec)', display: 'block', fontSize: 10, textTransform: 'uppercase' }}>Certificate Name</span>
+                        <strong>{matchedCert.name} ({matchedCert.commonName})</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: 'var(--c-text-sec)', display: 'block', fontSize: 10, textTransform: 'uppercase' }}>Issuer</span>
+                        <strong>{matchedCert.issuer}</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: 'var(--c-text-sec)', display: 'block', fontSize: 10, textTransform: 'uppercase' }}>Expiry Date</span>
+                        <strong>{matchedCert.validTo}</strong>
+                      </div>
+                    </div>
+                  ) : (
+                    <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--c-text-sec)', fontStyle: 'italic' }}>
+                      No active SSL Certificate covers this FQDN. Add a matching cert in the SSL Certificate Center.
+                    </p>
+                  )}
                 </div>
               </div>
 
